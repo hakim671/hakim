@@ -13,3 +13,6 @@ with st.expander("initialdata"):
   st.write("**y**")
   y_raw = df.species
   y_raw
+with st.expander("data-viz"):
+  st.scatter_chart(data=df,x="bill_depth_mm",y='body_mass_g', color = 'species')
+  st.scatter_chart( data= df, x = 'bill_depth_mm', y = 'sex', color = 'species')
