@@ -3,9 +3,9 @@ import pandas as pd
 
 st.title('🎈 Hakim app')
 
-st.write('Hakim vret!')
+st.write('Zoir_daun!')
 
-with st.expander("initialdata"):
+with st.expander("initial_data"):
   df = pd.read_csv('https://raw.githubusercontent.com/dataprofessor/data/master/penguins_cleaned.csv')
   st.write("**x**")
   X_raw = df.drop("species",axis=1)
