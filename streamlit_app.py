@@ -1,105 +1,144 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
 
-st.title('🎈 Hakim app')
-
-st.write('hakim-top-1!')
-
-with st.expander("initial_data"):
-  df = pd.read_csv('https://raw.githubusercontent.com/dataprofessor/data/master/penguins_cleaned.csv')
-  st.write("**x**")
-  X_raw = df.drop("species",axis=1)
-  X_raw
-  st.write("**y**")
-  y_raw = df.species
-  y_raw
-with st.expander("data-viz"):
-  st.scatter_chart(data=df,x="bill_depth_mm",y='body_mass_g', color = 'species')
-  st.scatter_chart( data= df, x = 'bill_depth_mm', y = 'sex', color = 'species')
-  st.scatter_chart(data=df, x='bill_depth_mm', y='sex', color='species')
-
-with st.sidebar:
-  st.header('Input features')
-  island = st.selectbox( 'Island', ( 'Biscoe', 'Dream', 'Torgersen'))
-  bill_length_mm = st.slider('Bill length (mm)', 32.1, 59.6, 43.9 )
-  bill_depth_mm = st.slider('Bill depth (mm)', 13.1, 21.5, 17.2 )
-  flipper_length_mm = st.slider('Flipper depth (mm)', 172.8, 231.0, 201.0 )
-  body_mass_g = st.slider('Body mass (g)', 2700.0, 6300.0, 4207.0 )
-  gender = st.selectbox('Gender', ('Male','Female'))
-  
-  
-  
-
-# Create a DataFrame for the input features
-  data = {'island': island,
-          'bill_length_mm': bill_length_mm,
-          'bill_depth_mm': bill_depth_mm,
-          'flipper_length_mm': flipper_length_mm,
-          'body_mass_g': body_mass_g,
-          'sex': gender}
-  input_df = pd.DataFrame(data, index=[0])
-  input_penguins = pd.concat([input_df, X_raw], axis=0)
-encode = ['island', 'sex']
-df_penguins = pd.get_dummies (input_penguins, prefix=encode)
-
-X = df_penguins [1:]
-input_row = df_penguins [:1]
-# Encode y
-target_mapper = {'Adelie': 0,
-                 'Chinstrap': 1,
-                 'Gentoo': 2}
-def target_encode(val):
-  return target_mapper [val]
-y = y_raw.apply(target_encode)
-with st.expander ('Data preparation'):
-  st.write('**Encoded X (input penguin)**')
-  input_row
-  st.write('**Encoded y**')
-  y
-# Model training and inference
-## Train the ML model
-clf = RandomForestClassifier()
-clf.fit(X, y)
-
-## Apply model to make predictions
-prediction = clf.predict(input_row)
-prediction_proba = clf.predict_proba(input_row)
-
-df_prediction_proba = pd.DataFrame(prediction_proba)
-df_prediction_proba.columns = ['Adelie', 'Chinstrap', 'Gentoo']
-df_prediction_proba.rename(columns={0: 'Adelie',
-                                 1: 'Chinstrap',
-                                 2: 'Gentoo'})
-
-# Display predicted species
-st.subheader('Predicted Species')
-st.dataframe(df_prediction_proba,
-             column_config={
-               'Adelie': st.column_config.ProgressColumn(
-                 'Adelie',
-                 format='%f',
-                 width='medium',
-                 min_value=0,
-                 max_value=1
-               ),
-               'Chinstrap': st.column_config.ProgressColumn(
-                 'Chinstrap',
-                 format='%f',
-                 width='medium',
-                 min_value=0,
-                 max_value=1
-               ),
-               'Gentoo': st.column_config.ProgressColumn(
-                 'Gentoo',
-                 format='%f',
-                 width='medium',
-                 min_value=0,
-                 max_value=1
-               ),
-             }, hide_index=True)
+df = pd.read_excel("Football_Matches_2425_2526.xlsx")
 
 
-penguins_species = np.array(['Adelie', 'Chinstrap', 'Gentoo'])
-st.success(str(penguins_species[prediction][0]))
+# дата
+df["Дата"] = pd.to_datetime(dict(
+    year=df["Год"],
+    month=df["Месяц"],
+    day=df["День"]
+))
+
+df = df.sort_values("Дата")
+home = df[["Дата", "Команда-1", "Команда-2", "Счёт"]].copy()
+home[["g1", "g2"]] = home["Счёт"].str.split("-", expand=True).astype(int)
+
+home = home.rename(columns={"Команда-1": "team", "g1": "goals_for", "g2": "goals_against"})
+home = home[["Дата", "team", "goals_for", "goals_against"]]
+
+away = df[["Дата", "Команда-2", "Команда-1", "Счёт"]].copy()
+away[["g1", "g2"]] = away["Счёт"].str.split("-", expand=True).astype(int)
+
+away = away.rename(columns={"Команда-2": "team", "g2": "goals_for", "g1": "goals_against"})
+away = away[["Дата", "team", "goals_for", "goals_against"]]
+
+long_df = pd.concat([home, away]).sort_values(["team", "Дата"])
+long_df["form_goals_for"] = (
+    long_df.groupby("team")["goals_for"]
+    .rolling(5, min_periods=1)
+    .mean()
+    .reset_index(level=0, drop=True)
+)
+
+long_df["form_goals_against"] = (
+    long_df.groupby("team")["goals_against"]
+    .rolling(5, min_periods=1)
+    .mean()
+    .reset_index(level=0, drop=True)
+)
+long_df["target_next_goals"] = (
+    long_df.groupby("team")["goals_for"]
+    .shift(-1)
+)
+model_df = long_df.dropna().copy()
+
+features = ["form_goals_for", "form_goals_against"]
+X = model_df[features]
+y = model_df["target_next_goals"]
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False)
+
+model = RandomForestRegressor(n_estimators=200, random_state=42)
+model.fit(X_train, y_train)
+
+preds = model.predict(X_test)
+
+
+
+
+
+
+
+
+
+
+def predict_match(home_team, away_team, date, long_df, model):
+    
+    date = pd.to_datetime(date)
+
+    # берем только матчи ДО этой даты (важно!)
+    history = long_df[long_df["Дата"] < date]
+
+    # последние 5 матчей формы home
+    home_hist = history[history["team"] == home_team].tail(5)
+    home_for = home_hist["goals_for"].mean()
+    home_against = home_hist["goals_against"].mean()
+
+    # последние 5 матчей формы away
+    away_hist = history[history["team"] == away_team].tail(5)
+    away_for = away_hist["goals_for"].mean()
+    away_against = away_hist["goals_against"].mean()
+
+    # если мало данных
+    home_for = 0 if pd.isna(home_for) else home_for
+    home_against = 0 if pd.isna(home_against) else home_against
+    away_for = 0 if pd.isna(away_for) else away_for
+    away_against = 0 if pd.isna(away_against) else away_against
+
+    # X для модели (две команды → два ряда)
+    X_match = pd.DataFrame([
+        [home_for, home_against],
+        [away_for, away_against]
+    ], columns=["form_goals_for", "form_goals_against"])
+
+    preds = model.predict(X_match)
+
+    return {
+        "home_team": home_team,
+        "away_team": away_team,
+        "home_goals_pred": preds[0],
+        "away_goals_pred": preds[1],
+    }
+
+
+
+teams = ['Burnley', 'Almeria', 'Sevilla', 'Brighton', 'Ath Bilbao',
+       'Arsenal', 'Las Palmas', 'Bournemouth', 'Sociedad', 'Newcastle',
+       'Sheffield United', 'Everton', 'Villarreal', 'Brentford', 'Getafe',
+       'Chelsea', 'Celta', 'Man United', 'Ath Madrid', 'Cadiz',
+       "Nott'm Forest", 'Valencia', 'Mallorca', 'Osasuna', 'Inter',
+       'Genoa', 'Frosinone', 'Empoli', 'Fulham', 'Liverpool', 'Wolves',
+       'Tottenham', 'Man City', 'Roma', 'Sassuolo', 'Lecce', 'Udinese',
+       'Betis', 'Girona', 'Aston Villa', 'West Ham', 'Barcelona',
+       'Torino', 'Granada', 'Alaves', 'Crystal Palace', 'Bologna',
+       'Verona', 'Milan', 'Monza', 'Juventus', 'Lazio', 'Napoli',
+       'Fiorentina', 'Salernitana', 'Cagliari', 'Vallecano', 'Luton',
+       'Real Madrid', 'Atalanta', 'Ipswich', 'Parma', 'Valladolid',
+       'Leicester', 'Espanol', 'Southampton', 'Leganes', 'Venezia',
+       'Como', 'Sunderland', 'Leeds', 'Elche', 'Levante', 'Oviedo',
+       'Cremonese', 'Pisa']
+
+team1 = st.selectbox(
+    "Выберите команду",
+    teams
+)
+team2 = st.selectbox(
+    "Выберите команду",
+    teams
+)
+den = input()
+a = predict_match(
+    home_team="team1",
+    away_team="team2",
+    date=den,
+    long_df=long_df,
+    model=model
+)
+
+st.write(a['home_goals_pred'] + a['away_goals_pred'] - 0.5)
