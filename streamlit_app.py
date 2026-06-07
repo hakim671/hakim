@@ -125,13 +125,17 @@ teams = ['Burnley', 'Almeria', 'Sevilla', 'Brighton', 'Ath Bilbao',
        'Cremonese', 'Pisa']
 
 team1 = st.selectbox(
-    "Выберите команду",
-    teams
+    "Команда 1",
+    teams,
+    key="team1"
 )
+
 team2 = st.selectbox(
-    "Выберите команду",
-    teams
+    "Команда 2",
+    teams,
+    key="team2"
 )
+
 den = input()
 a = predict_match(
     home_team="team1",
