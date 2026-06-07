@@ -136,13 +136,20 @@ team2 = st.selectbox(
     key="team2"
 )
 
-den = input()
-a = predict_match(
-    home_team="team1",
-    away_team="team2",
-    date=den,
-    long_df=long_df,
-    model=model
-)
+date = st.date_input("Дата матча")
 
-st.write(a['home_goals_pred'] + a['away_goals_pred'] - 0.5)
+if st.button("Предсказать"):
+
+    a = predict_match(
+        home_team=team1,
+        away_team=team2,
+        date=date,
+        long_df=long_df,
+        model=model
+    )
+
+    total = a['home_goals_pred'] + a['away_goals_pred']
+
+    st.write(f"{team1}: {a['home_goals_pred']:.2f}")
+    st.write(f"{team2}: {a['away_goals_pred']:.2f}")
+    st.write(f"Тотал: {total:.2f}")
