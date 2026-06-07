@@ -148,7 +148,7 @@ if st.button("Предсказать"):
         model=model
     )
 
-    total = a['home_goals_pred'] + a['away_goals_pred']
+    total = round(a['home_goals_pred']) + round(a['away_goals_pred'])
 
     st.write(f"{team1}: {a['home_goals_pred']:.2f}")
     st.write(f"{team2}: {a['away_goals_pred']:.2f}")
