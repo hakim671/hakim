@@ -159,6 +159,6 @@ def round_to_half(x):
 
 total = round_to_half(a['home_goals_pred']) + round_to_half(a['away_goals_pred'])
 
-    st.write(f"{team1}: {a['home_goals_pred']:.2f}")
-    st.write(f"{team2}: {a['away_goals_pred']:.2f}")
-    st.write(f"Тотал: {total:.2f}")
+st.write(f"{team1}: {a['home_goals_pred']:.2f}")
+st.write(f"{team2}: {a['away_goals_pred']:.2f}")
+st.write(f"Тотал: {total:.2f}")
