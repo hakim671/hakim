@@ -148,17 +148,17 @@ if st.button("Предсказать"):
         model=model
     )
 
-def round_to_half(x):
-    whole = int(x)
-    decimal = x - whole
+    def round_to_half(x):
+        whole = int(x)
+        decimal = x - whole
     
-    if decimal < 0.5:
-        return whole
-    else:
-        return whole + 0.5
+        if decimal < 0.5:
+            return whole
+        else:
+            return whole + 0.5
 
-total = round_to_half(a['home_goals_pred']) + round_to_half(a['away_goals_pred'])
+    total = round_to_half(a['home_goals_pred']) + round_to_half(a['away_goals_pred'])
 
-st.write(f"{team1}: {a['home_goals_pred']:.2f}")
-st.write(f"{team2}: {a['away_goals_pred']:.2f}")
-st.write(f"Тотал: {total:.2f}")
+    st.write(f"{team1}: {a['home_goals_pred']:.2f}")
+    st.write(f"{team2}: {a['away_goals_pred']:.2f}")
+    st.write(f"Тотал: {total:.2f}")
