@@ -148,7 +148,7 @@ if st.button("Предсказать"):
         model=model
     )
 
- def round_to_half(x):
+def round_to_half(x):
     whole = int(x)
     decimal = x - whole
     
